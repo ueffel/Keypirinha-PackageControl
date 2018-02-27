@@ -25,7 +25,7 @@ class PackageControl(kp.Plugin):
         self._urlopener = kpn.build_urllib_opener()
         self.__command_executing = False
         self.__list_updating = False
-        self._debug = True
+        self._debug = False
 
     def on_events(self, flags):
         """
@@ -46,8 +46,6 @@ class PackageControl(kp.Plugin):
         """
         self.dbg("Packages root path: {}".format(self._get_packages_root()))
         self._read_config()
-
-        self.set_default_icon(self.load_icon("packagecontrol.ico"))
 
         # Adding PackageControl itself, so updating is possible
         if os.path.dirname(__file__).endswith("PackageControl.keypirinha-package") \
