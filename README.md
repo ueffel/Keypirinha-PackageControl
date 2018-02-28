@@ -1,9 +1,7 @@
 Keypirinha Package Control
 ==========================
 
-This is a package for the fast keystroke launcher keypirinha
-(http://keypirinha.com/). It provides commands to install, update and remove
-third party packages.
+This is a package for the fast keystroke launcher keypirinha (http://keypirinha.com/). It provides commands to install, update and remove third party packages.
 
 ## Usage
 
@@ -25,16 +23,17 @@ All commands are prefixed with `PackageControl:`.
 * Open the `Keypirinha: Console`
 * Enter the following:
     ```python
-    import keypirinha as kp,keypirinha_net as kpn,os;p="PackageControl.keypirinha-package";d=kpn.build_urllib_opener().open("https://github.com/ueffel/Keypirinha-PackageControl/releases/download/0.1/"+p);pb=d.read();d.close();pp=os.path.join(kp.installed_package_dir(), p);f=open(pp, "wb");f.write(pb);f.close()
+    import keypirinha as kp,keypirinha_net as kpn,os;p="PackageControl.keypirinha-package";d=kpn.build_urllib_opener().open("https://github.com/ueffel/Keypirinha-PackageControl/releases/download/0.1/"+p);pb=d.read();d.close();f=open(os.path.join(kp.installed_package_dir(),p),"wb");f.write(pb);f.close()
     ```
 
 ### Manually
 
 * Download the `PackageControl.keypirinha-package` from the [releases](https://github.com/ueffel/Keypirinha-PackageControl/releases/latest)
-* Copy the file in your `%APPDATA%\Keypirinha\InstalledPackages` directory (or `<Keypirinha_Home>\portable\Profile\InstalledPackages`)
+* Copy the file into `%APPDATA%\Keypirinha\InstalledPackages` (installed mode) or `<Keypirinha_Home>\portable\Profile\InstalledPackages` (portable mode)
 
 ## Problems
 
 If you have any problems after updating packages, please try to restart Keypirinha and see if the problems are still there.
 The reason for some problems can be [Live Reloading](http://keypirinha.com/api/overview.html?highlight=tricky#reloading) of packages, also related: [this issue](https://github.com/Keypirinha/Keypirinha/issues/117).
+
 TL;DR: Python's import/unload machinery can sometimes do some weird stuff at runtime.
