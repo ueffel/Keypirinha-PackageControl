@@ -51,7 +51,7 @@ class PackageControl(kp.Plugin):
         if os.path.dirname(__file__).endswith("PackageControl.keypirinha-package") \
                 and os.path.dirname(os.path.dirname(__file__)) \
                 and "PackageControl" not in self._installed_packages:
-            self._installed_packages.append("PackageControl")
+            self._installed_packages.append("Keypirinha-PackageControl")
 
         self._check_installed()
 
@@ -216,6 +216,7 @@ class PackageControl(kp.Plugin):
                 self._install_package(self._get_package(item.raw_args()), force=True)
             elif item.target() == "update_repo":
                 self._get_available_packages(True)
+                self._check_installed()
             elif item.target() == "update_all":
                 self._get_available_packages(True)
                 for package_name in self._installed_packages:
