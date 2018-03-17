@@ -1,4 +1,5 @@
 from .lib.package import Package
+from .lib.RedirectorHandler import RedirectorHandler
 import keypirinha as kp
 import keypirinha_net as kpn
 import os
@@ -7,22 +8,29 @@ import json
 import datetime
 import re
 import time
+import traceback
+import urllib
 
 PACKAGE_COMMAND = kp.ItemCategory.USER_BASE + 1
 
 
 class PackageControl(kp.Plugin):
     """
-        Packages that provides a means to install, update and remove keypirinha packages
+        Package that provides a means to install, update and remove keypirinha packages
     """
+    DEFAULT_REPO = "http://ueffel.bplaced.de/uni/packages.json"
+    DEFAULT_AUTOUPDATE = True
+    DEFAULT_UPDATE_INTERVAL = 12
 
     def __init__(self):
         super().__init__()
         self._installed_packages = []
         self._untracked_packages = []
         self._available_packages = []
-        self._repo_url = None
-        self._urlopener = kpn.build_urllib_opener()
+        self._repo_url = self.DEFAULT_REPO
+        self._autoupdate = self.DEFAULT_AUTOUPDATE
+        self._update_interval = self.DEFAULT_UPDATE_INTERVAL
+        self._urlopener = kpn.build_urllib_opener(extra_handlers=[RedirectorHandler()])
         self.__command_executing = False
         self.__list_updating = False
         self._debug = False
@@ -94,7 +102,7 @@ class PackageControl(kp.Plugin):
         reinstall_cmd = self.create_item(
             category=PACKAGE_COMMAND,
             label="PackageControl: Reinstall Package",
-            short_desc="Removes packages and installes it again, no changes to the packages configuration",
+            short_desc="Removes packages and installs them again from the repository",
             target="reinstall",
             args_hint=kp.ItemArgsHint.REQUIRED,
             hit_hint=kp.ItemHitHint.NOARGS
@@ -150,7 +158,6 @@ class PackageControl(kp.Plugin):
         if not items_chain:
             return
 
-        self.dbg("on_suggest() user_input: {}, items_chain: {}".format(user_input, items_chain))
         suggestions = []
         packages = []
 
@@ -211,7 +218,7 @@ class PackageControl(kp.Plugin):
             elif item.target() == "reinstall":
                 package = self._get_package(item.raw_args())
                 self._remove_package(package, save_settings=False)
-                self._install_package(self._get_package(item.raw_args()))
+                self._install_package(package)
             elif item.target() == "reinstall_untracked":
                 self._install_package(self._get_package(item.raw_args()), force=True)
             elif item.target() == "update_repo":
@@ -244,11 +251,17 @@ class PackageControl(kp.Plugin):
         self.dbg("Reading config")
         settings = self.load_settings()
 
-        self._repo_url = settings.get("repository", "main")
+        self._repo_url = settings.get("repository", "main", self.DEFAULT_REPO)
         self.dbg("repo_url: {}".format(self._repo_url))
 
         self._installed_packages = list(set(settings.get_multiline("installed_packages", "main")))
         self.dbg("installed_packages: {}".format(self._installed_packages))
+
+        self._autoupdate = settings.get_bool("autoupdate", "main", self.DEFAULT_AUTOUPDATE)
+        self.dbg("autoupdate: {}".format(self._autoupdate))
+
+        self._update_interval = settings.get_float("update_interval", "main", self.DEFAULT_UPDATE_INTERVAL)
+        self.dbg("update_interval: {}".format(self._update_interval))
 
     def _save_settings(self):
         """
@@ -295,10 +308,22 @@ class PackageControl(kp.Plugin):
             package = self._get_package_from_filename(installed_file)
             if not package or package.name not in self._installed_packages:
                 self._untracked_packages.append(installed_file)
-
         if self._untracked_packages:
             self.info("{} package(s) not installed through PackageControl: {}".format(len(self._untracked_packages),
                                                                                       self._untracked_packages))
+        outdated = []
+        for package_name in self._installed_packages:
+            package = self._get_package(package_name)
+            if package and self._package_out_of_date(package):
+                outdated.append(package_name)
+        if outdated:
+            self.info("{} package(s) are out of date: {}".format(len(outdated), outdated))
+
+        if self._autoupdate:
+            for package_name in outdated:
+                package = self._get_package(package_name)
+                if package:
+                    self._update_package(package)
 
     def _get_package(self, package_name):
         """
@@ -340,14 +365,14 @@ class PackageControl(kp.Plugin):
         try:
             self.__list_updating = True
             cache_path = self.get_package_cache_path(True)
+            last_run = self._get_last_run()
+            self.dbg("Last run was {}".format(last_run))
 
-            if force or not self._available_packages:
-                self.dbg("No available packages memory cached, getting list from file cache")
+            if force or not self._available_packages or not last_run:
+                self.dbg("No available packages memory cached or its time to update, getting list from file cache")
                 repo = None
                 write_cache = False
 
-                last_run = self._get_last_run()
-                self.dbg("Last run was {}".format(last_run))
                 if not force and last_run and os.path.isfile(os.path.join(cache_path, "packages.json")):
                     with open(os.path.join(cache_path, "packages.json"), "r") as cache:
                         repo = json.loads(cache.read())
@@ -356,9 +381,14 @@ class PackageControl(kp.Plugin):
                                                                                               len(repo["packages"])))
 
                 if force or not repo:
-                    self.dbg("No available packages cached, getting list from '{}'".format(self._repo_url))
-                    with self._urlopener.open(self._repo_url) as response:
+                    self.dbg("No available packages cached or its time to update, getting list from ", self._repo_url)
+                    req = urllib.request.Request(self._repo_url)
+                    with self._urlopener.open(req) as response:
                         repo = json.loads(response.read())
+                        if hasattr(req, "redirect"):
+                            self.dbg("Request permanently redirected. Changing repository url to:", req.redirect)
+                            self._repo_url = req.redirect
+                            self._save_settings()
                     write_cache = True
                     self.info("Package list loaded from '{}' ({} packages)".format(repo["name"], len(repo["packages"])))
 
@@ -467,9 +497,7 @@ class PackageControl(kp.Plugin):
         self.dbg("Package path: {}".format(package_path))
 
         if os.path.isfile(package_path):
-            stat = os.stat(package_path)
-            self.dbg("Modified Time: {}, Package Time: {}".format(stat.st_mtime, package.date.timestamp()))
-            if force or stat.st_mtime < package.date.timestamp():
+            if force or self._package_out_of_date(package):
                 package.download(self._urlopener, self._get_packages_root())
                 self.info("Updated package '{}'".format(package.name))
             else:
@@ -478,8 +506,19 @@ class PackageControl(kp.Plugin):
             self.warn("Package '{}' not found while updating. Reinstalling".format(package.name))
             self._install_package(package, save_settings=False)
 
+    def _package_out_of_date(self, package):
+        """Checks if a package is out of date and returns the result as boolean
+        """
+        self.dbg("Checking if package is out of date:", package.name)
+        package_path = os.path.join(self._get_packages_root(), package.filename)
+        if os.path.isfile(package_path):
+            stat = os.stat(package_path)
+            return stat.st_mtime < package.date.timestamp()
+
+        return False
+
     def _get_packages_root(self):
         """
-            Returns to path to the keypirinha package directory
+            Returns to path to the keypirinha installed package directory
         """
         return kp.installed_package_dir()
