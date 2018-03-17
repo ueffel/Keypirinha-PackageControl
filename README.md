@@ -1,7 +1,8 @@
 Keypirinha Package Control
 ==========================
 
-This is a package for the fast keystroke launcher keypirinha (http://keypirinha.com/). It provides commands to install, update and remove third party packages.
+This is a package for the fast keystroke launcher keypirinha (http://keypirinha.com/). It provides
+commands to install, update and remove third party packages.
 
 ## Usage
 
@@ -13,7 +14,7 @@ All commands are prefixed with `PackageControl:`.
 * Reinstall Package - Deinstalls the package and installs it again (configurations are untouched)
 * Reinstall Untracked - Reinstalls a already installed package, that was not installed through
   PackageControl (untracked package)
-* Reinstall All Untracked - Does the  Reinstall All Untracked command for all untracked packages
+* Reinstall All Untracked - Does the  Reinstall Untracked command for all untracked packages
 * Update Repository List - Downloads the list of available package again
 
 ## Installation
@@ -28,12 +29,17 @@ All commands are prefixed with `PackageControl:`.
 
 ### Manually
 
-* Download the `PackageControl.keypirinha-package` from the [releases](https://github.com/ueffel/Keypirinha-PackageControl/releases/latest)
-* Copy the file into `%APPDATA%\Keypirinha\InstalledPackages` (installed mode) or `<Keypirinha_Home>\portable\Profile\InstalledPackages` (portable mode)
+* Download the `PackageControl.keypirinha-package` from the
+  [releases](https://github.com/ueffel/Keypirinha-PackageControl/releases/latest)
+* Copy the file into `%APPDATA%\Keypirinha\InstalledPackages` (installed mode) or
+  `<Keypirinha_Home>\portable\Profile\InstalledPackages` (portable mode)
 
 ## Problems
 
-If you have any problems after updating packages, please try to restart Keypirinha and see if the problems are still there.
-The reason for some problems can be [Live Reloading](http://keypirinha.com/api/overview.html?highlight=tricky#reloading) of packages, also related: [this issue](https://github.com/Keypirinha/Keypirinha/issues/117).
+If you have any problems after updating packages, please try to restart Keypirinha and see if the
+problems are still there. The reason for some problems can be [Live
+Reloading](http://keypirinha.com/api/overview.html?highlight=tricky#reloading) of packages, also
+related: [this issue](https://github.com/Keypirinha/Keypirinha/issues/117).
 
-TL;DR: Python's import/unload machinery can sometimes do some weird stuff at runtime.
+TL;DR: Python's import/unload machinery can sometimes do weird stuff at runtime. Restarting the
+python interpreter helps.
