@@ -17,7 +17,7 @@ PACKAGE_COMMAND = kp.ItemCategory.USER_BASE + 1
 class PackageControl(kp.Plugin):
     """Package that provides a means to install, update and remove keypirinha packages
     """
-    DEFAULT_REPO = "http://ueffel.bplaced.de/uni/packages.json"
+    DEFAULT_REPO = "https://ue.spdns.de/packagecontrol/packages.json"
     DEFAULT_AUTOUPDATE = True
     DEFAULT_UPDATE_INTERVAL = 12
 
@@ -55,7 +55,6 @@ class PackageControl(kp.Plugin):
 
         # Adding PackageControl itself, so updating is possible
         if os.path.dirname(__file__).endswith("PackageControl.keypirinha-package") \
-                and os.path.dirname(os.path.dirname(__file__)) \
                 and "Keypirinha-PackageControl" not in self._installed_packages:
             self._installed_packages.append("Keypirinha-PackageControl")
 
