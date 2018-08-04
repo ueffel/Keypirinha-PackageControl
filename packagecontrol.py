@@ -20,6 +20,14 @@ class PackageControl(kp.Plugin):
     DEFAULT_REPO = "https://ue.spdns.de/packagecontrol/packages.json"
     DEFAULT_AUTOUPDATE = True
     DEFAULT_UPDATE_INTERVAL = 12
+    COMMAND_INSTALL = "install"
+    COMMAND_REMOVE = "remove"
+    COMMAND_UPDATE = "update"
+    COMMAND_REINSTALL = "reinstall"
+    COMMAND_REINSTALL_UNTRACKED = "reinstall_untracked"
+    COMMAND_UPDATE_REPO = "update_repo"
+    COMMAND_UPDATE_ALL = "update_all"
+    COMMAND_REINSTALL_ALL_UNTRACKED = "reinstall_all_untracked"
 
     def __init__(self):
         super().__init__()
@@ -69,7 +77,7 @@ class PackageControl(kp.Plugin):
             category=PACKAGE_COMMAND,
             label="PackageControl: Install Package",
             short_desc="Installs a new packages from the repositiory",
-            target="install",
+            target=self.COMMAND_INSTALL,
             args_hint=kp.ItemArgsHint.REQUIRED,
             hit_hint=kp.ItemHitHint.NOARGS
         )
@@ -79,7 +87,7 @@ class PackageControl(kp.Plugin):
             category=PACKAGE_COMMAND,
             label="PackageControl: Remove Package",
             short_desc="Removes already installed packages",
-            target="remove",
+            target=self.COMMAND_REMOVE,
             args_hint=kp.ItemArgsHint.REQUIRED,
             hit_hint=kp.ItemHitHint.NOARGS
         )
@@ -89,7 +97,7 @@ class PackageControl(kp.Plugin):
             category=PACKAGE_COMMAND,
             label="PackageControl: Update Package",
             short_desc="Updates already installed packages to the latest version",
-            target="update",
+            target=self.COMMAND_UPDATE,
             args_hint=kp.ItemArgsHint.REQUIRED,
             hit_hint=kp.ItemHitHint.NOARGS
         )
@@ -99,7 +107,7 @@ class PackageControl(kp.Plugin):
             category=PACKAGE_COMMAND,
             label="PackageControl: Reinstall Package",
             short_desc="Removes packages and installs them again from the repository",
-            target="reinstall",
+            target=self.COMMAND_REINSTALL,
             args_hint=kp.ItemArgsHint.REQUIRED,
             hit_hint=kp.ItemHitHint.NOARGS
         )
@@ -109,7 +117,7 @@ class PackageControl(kp.Plugin):
             category=PACKAGE_COMMAND,
             label="PackageControl: Reinstall untracked package from repository",
             short_desc="Reinstalls a package that was not installed through PackageControl from the repository",
-            target="reinstall_untracked",
+            target=self.COMMAND_REINSTALL_UNTRACKED,
             args_hint=kp.ItemArgsHint.REQUIRED,
             hit_hint=kp.ItemHitHint.NOARGS
         )
@@ -119,7 +127,7 @@ class PackageControl(kp.Plugin):
             category=PACKAGE_COMMAND,
             label="PackageControl: Update Repository List",
             short_desc="Updates the list of packages from the repository",
-            target="update_repo",
+            target=self.COMMAND_UPDATE_REPO,
             args_hint=kp.ItemArgsHint.FORBIDDEN,
             hit_hint=kp.ItemHitHint.NOARGS
         )
@@ -129,7 +137,7 @@ class PackageControl(kp.Plugin):
             category=PACKAGE_COMMAND,
             label="PackageControl: Update All Packages",
             short_desc="Updates all currently installed packages to the latest version from the repository",
-            target="update_all",
+            target=self.COMMAND_UPDATE_ALL,
             args_hint=kp.ItemArgsHint.FORBIDDEN,
             hit_hint=kp.ItemHitHint.NOARGS
         )
@@ -139,7 +147,7 @@ class PackageControl(kp.Plugin):
             category=PACKAGE_COMMAND,
             label="PackageControl: Reinstalls all untracked package from repository",
             short_desc="Reinstalls all packages that were not installed through PackageControl from the repository",
-            target="reinstall_all_untracked",
+            target=self.COMMAND_REINSTALL_ALL_UNTRACKED,
             args_hint=kp.ItemArgsHint.FORBIDDEN,
             hit_hint=kp.ItemHitHint.NOARGS
         )
@@ -169,16 +177,16 @@ class PackageControl(kp.Plugin):
             short_desc="Collecting packages"
         )])
 
-        if items_chain[0].target() == "install":
+        if items_chain[0].target() == self.COMMAND_INSTALL:
             self.dbg("Suggesting packages to install")
             packages = [package for package in self._get_available_packages()
                         if package.name not in self._installed_packages]
-        elif items_chain[0].target() == "remove" or items_chain[0].target() == "update" \
-                or items_chain[0].target() == "reinstall":
+        elif items_chain[0].target() == self.COMMAND_REMOVE or items_chain[0].target() == self.COMMAND_UPDATE \
+                or items_chain[0].target() == self.COMMAND_REINSTALL:
             self.dbg("Suggesting packages to update/remove/reinstall")
             packages = [package for package in self._get_available_packages()
                         if package.name in self._installed_packages]
-        elif items_chain[0].target() == "reinstall_untracked":
+        elif items_chain[0].target() == self.COMMAND_REINSTALL_UNTRACKED:
             self.dbg("Suggesting packages to reinstall untracked")
             packages = [package for package in self._get_available_packages()
                         if package.filename in self._untracked_packages]
@@ -203,28 +211,28 @@ class PackageControl(kp.Plugin):
 
         try:
             self.__command_executing = True
-            if item.target() == "install":
+            if item.target() == self.COMMAND_INSTALL:
                 self._install_package(self._get_package(item.raw_args()))
-            elif item.target() == "remove":
+            elif item.target() == self.COMMAND_REMOVE:
                 self._remove_package(self._get_package(item.raw_args()))
-            elif item.target() == "update":
+            elif item.target() == self.COMMAND_UPDATE:
                 self._update_package(self._get_package(item.raw_args()))
-            elif item.target() == "reinstall":
+            elif item.target() == self.COMMAND_REINSTALL:
                 package = self._get_package(item.raw_args())
                 self._remove_package(package, save_settings=False)
                 self._install_package(package)
-            elif item.target() == "reinstall_untracked":
+            elif item.target() == self.COMMAND_REINSTALL_UNTRACKED:
                 self._install_package(self._get_package(item.raw_args()), force=True)
-            elif item.target() == "update_repo":
+            elif item.target() == self.COMMAND_UPDATE_REPO:
                 self._get_available_packages(True)
                 self._check_installed()
-            elif item.target() == "update_all":
+            elif item.target() == self.COMMAND_UPDATE_ALL:
                 self._get_available_packages(True)
                 for package_name in self._installed_packages:
                     package = self._get_package(package_name)
                     self._update_package(package)
                 self.info("Updating all packages finished")
-            elif item.target() == "reinstall_all_untracked":
+            elif item.target() == self.COMMAND_REINSTALL_ALL_UNTRACKED:
                 for untracked in self._untracked_packages:
                     package = self._get_package_from_filename(untracked)
                     if package:
@@ -293,7 +301,7 @@ class PackageControl(kp.Plugin):
                 self.dbg("Package '{}' not installed", installed_package)
                 self._install_package(package, save_settings=False)
             else:
-                self.dbg("Package installed: ", installed_package)
+                self.dbg("Package installed:", installed_package)
 
         self._untracked_packages = []
         for installed_file in installed_fs:
@@ -332,7 +340,7 @@ class PackageControl(kp.Plugin):
     def _get_package_from_filename(self, file_name):
         """Returns the package object with the given filename if present
         """
-        self.dbg("Getting package from filename: ", file_name)
+        self.dbg("Getting package from filename:", file_name)
 
         possible_packages = [package for package in self._get_available_packages() if package.filename == file_name]
 
@@ -370,12 +378,12 @@ class PackageControl(kp.Plugin):
                                                                                               len(repo["packages"])))
 
                 if force or not repo:
-                    self.dbg("No available packages cached or its time to update, getting list from ", self._repo_url)
+                    self.dbg("No available packages cached or its time to update, getting list from", self._repo_url)
                     req = urllib.request.Request(self._repo_url)
                     with self._urlopener.open(req) as response:
                         repo = json.loads(response.read())
                         if hasattr(req, "redirect"):
-                            self.dbg("Request permanently redirected. Changing repository url to:", req.redirect)
+                            self.info("Request permanently redirected. Changing repository url to:", req.redirect)
                             self._repo_url = req.redirect
                             self._save_settings()
                     write_cache = True
@@ -389,7 +397,7 @@ class PackageControl(kp.Plugin):
                                                             self._make_date(json_package["date"]),
                                                             json_package["download_url"],
                                                             json_package["filename"]))
-                # self.dbg(self._available_packages)
+                self.dbg(self._available_packages)
 
                 if write_cache:
                     self.dbg("Writing file cache")
@@ -472,12 +480,12 @@ class PackageControl(kp.Plugin):
         self._installed_packages.remove(package.name)
         if save_settings:
             self._save_settings()
-        self.info("Removed package: ", package.name)
+        self.info("Removed package:", package.name)
 
     def _update_package(self, package, force=False):
         """Checks if a update is necessary, replaces the existing packages
         """
-        self.dbg("Updating package: ", package.name)
+        self.dbg("Updating package:", package.name)
 
         package_path = os.path.join(self._get_packages_root(), package.filename)
         self.dbg("Package path:", package_path)
@@ -485,7 +493,7 @@ class PackageControl(kp.Plugin):
         if os.path.isfile(package_path):
             if force or self._package_out_of_date(package):
                 package.download(self._urlopener, self._get_packages_root())
-                self.info("Updated package: ", package.name)
+                self.info("Updated package:", package.name)
             else:
                 self.info("Package up to date:", package.name)
         else:
