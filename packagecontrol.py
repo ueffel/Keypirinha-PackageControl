@@ -372,7 +372,7 @@ class PackageControl(kp.Plugin):
 
                 if not force and last_run and os.path.isfile(os.path.join(cache_path, "packages.json")):
                     with open(os.path.join(cache_path, "packages.json"), "r") as cache:
-                        repo = json.loads(cache.read())
+                        repo = json.load(cache)
                     write_cache = False
                     self.info("Package list loaded from file cache '{}' ({} packages)".format(repo["name"],
                                                                                               len(repo["packages"])))
@@ -381,7 +381,7 @@ class PackageControl(kp.Plugin):
                     self.dbg("No available packages cached or its time to update, getting list from", self._repo_url)
                     req = urllib.request.Request(self._repo_url)
                     with self._urlopener.open(req) as response:
-                        repo = json.loads(response.read())
+                        repo = json.loads(response.read().decode())
                         if hasattr(req, "redirect"):
                             self.info("Request permanently redirected. Changing repository url to:", req.redirect)
                             self._repo_url = req.redirect
