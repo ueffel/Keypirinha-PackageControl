@@ -43,3 +43,22 @@ related: [this issue](https://github.com/Keypirinha/Keypirinha/issues/117).
 
 TL;DR: Python's import/unload machinery can sometimes do weird stuff at runtime. Restarting the
 python interpreter helps.
+
+## Default Repository
+
+### Overview
+
+The default repository is maintained by myself, it's called "ueffel's Package Repository". An
+overview of available packages can be viewed [here](https://ue.spdns.de/packagecontrol/).
+
+### Submit your own package
+
+If you created your own package and want it to be available via PackageControl to other Keypirinha
+users you can submit it [here](https://ue.spdns.de/packagecontrol/new_package). The preferred way of
+publishing is Github. Your package repository should have the ready-to-use `.keypirinha-package`
+file in the release section. The package repository looks for the newest release that has such a
+file und exposes it.
+
+(If I find the time for it I will clean up and publish the code for the package repository web app
+for everyone that wants his own package repository. It's a python wsgi application written with
+flask.)
