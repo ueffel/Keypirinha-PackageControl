@@ -56,8 +56,8 @@ overview of available packages can be viewed [here](https://ue.spdns.de/packagec
 If you created your own package and want it to be available via PackageControl to other Keypirinha
 users you can submit it [here](https://ue.spdns.de/packagecontrol/new_package). The preferred way of
 publishing is Github. Your package repository should have the ready-to-use `.keypirinha-package`
-file in the release section. The package repository looks for the newest release that has such a
-file und exposes it.
+file in the release section. The package repository looks for the newest release (not pre-release) 
+that has such a file und exposes it.
 
 (If I find the time for it I will clean up and publish the code for the package repository web app
 for everyone that wants his own package repository. It's a python wsgi application written with
