@@ -40,7 +40,6 @@ class PackageControl(kp.Plugin):
         self._urlopener = kpn.build_urllib_opener(extra_handlers=[RedirectorHandler()])
         self.__command_executing = False
         self.__list_updating = False
-        self._debug = False
 
     def on_events(self, flags):
         """Reloads the config when its changed and installs missing packages
@@ -252,6 +251,8 @@ class PackageControl(kp.Plugin):
         self.dbg("Reading config")
         settings = self.load_settings()
 
+        self._debug = settings.get_bool("debug", "main", False)
+
         self._repo_url = settings.get("repository", "main", self.DEFAULT_REPO)
         self.dbg("repo_url:", self._repo_url)
 
@@ -330,24 +331,13 @@ class PackageControl(kp.Plugin):
         """
         self.dbg("Getting package:", package_name)
 
-        possible_packages = [package for package in self._get_available_packages() if package.name == package_name]
-
-        if possible_packages:
-            return possible_packages[0]
-        else:
-            return None
+        return next((package for package in self._get_available_packages() if package.name == package_name), None)
 
     def _get_package_from_filename(self, file_name):
         """Returns the package object with the given filename if present
         """
         self.dbg("Getting package from filename:", file_name)
-
-        possible_packages = [package for package in self._get_available_packages() if package.filename == file_name]
-
-        if possible_packages:
-            return possible_packages[0]
-        else:
-            return None
+        return next((package for package in self._get_available_packages() if package.filename == file_name), None)
 
     def _get_available_packages(self, force=False):
         """Returns the list of available packages from cache or downloads it if needed
@@ -511,7 +501,8 @@ class PackageControl(kp.Plugin):
 
         return False
 
-    def _get_packages_root(self):
+    @staticmethod
+    def _get_packages_root():
         """Returns to path to the keypirinha installed package directory
         """
         return kp.installed_package_dir()
