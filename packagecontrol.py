@@ -2,6 +2,7 @@ from .lib.package import Package
 from .lib.RedirectorHandler import RedirectorHandler
 import keypirinha as kp
 import keypirinha_net as kpn
+import keypirinha_util as kpu
 import os
 import configparser
 import json
@@ -40,6 +41,7 @@ class PackageControl(kp.Plugin):
         self._urlopener = kpn.build_urllib_opener(extra_handlers=[RedirectorHandler()])
         self.__command_executing = False
         self.__list_updating = False
+        self._actions = []
 
     def on_events(self, flags):
         """Reloads the config when its changed and installs missing packages
@@ -59,6 +61,19 @@ class PackageControl(kp.Plugin):
         """
         self.dbg("Packages root path:", self._get_packages_root())
         self._read_config()
+
+        self._actions.append(self.create_action(
+            name="execute",
+            label="Execute command",
+            short_desc="Executes the selected package command"
+        ))
+        self._actions.append(self.create_action(
+            name="visit_homepage",
+            label="Visit homepage of the package",
+            short_desc="Opens the browser"
+        ))
+
+        self.set_actions(PACKAGE_COMMAND, self._actions)
 
         # Adding PackageControl itself, so updating is possible
         if os.path.dirname(__file__).endswith("PackageControl.keypirinha-package") \
@@ -193,7 +208,8 @@ class PackageControl(kp.Plugin):
         for package in packages:
             package_item = items_chain[0].clone()
             package_item.set_short_desc(package.description if package.description else "no description")
-            package_item.set_args(package.name)
+            package_item.set_args("{} (by @{})".format(package.name, package.owner))
+            package_item.set_data_bag(package.name)
             suggestions.append(package_item)
 
         self.set_suggestions(suggestions)
@@ -210,18 +226,26 @@ class PackageControl(kp.Plugin):
 
         try:
             self.__command_executing = True
+            if action is not None and action.name() == "visit_homepage":
+                package = self._get_package(item.data_bag())
+                if package.homepage:
+                    kpu.shell_execute(package.homepage)
+                else:
+                    self.warn("Package homepage not set")
+                return
+
             if item.target() == self.COMMAND_INSTALL:
-                self._install_package(self._get_package(item.raw_args()))
+                self._install_package(self._get_package(item.data_bag()))
             elif item.target() == self.COMMAND_REMOVE:
-                self._remove_package(self._get_package(item.raw_args()))
+                self._remove_package(self._get_package(item.data_bag()))
             elif item.target() == self.COMMAND_UPDATE:
-                self._update_package(self._get_package(item.raw_args()))
+                self._update_package(self._get_package(item.data_bag()))
             elif item.target() == self.COMMAND_REINSTALL:
-                package = self._get_package(item.raw_args())
+                package = self._get_package(item.data_bag())
                 self._remove_package(package, save_settings=False)
                 self._install_package(package)
             elif item.target() == self.COMMAND_REINSTALL_UNTRACKED:
-                self._install_package(self._get_package(item.raw_args()), force=True)
+                self._install_package(self._get_package(item.data_bag()), force=True)
             elif item.target() == self.COMMAND_UPDATE_REPO:
                 self._get_available_packages(True)
                 self._check_installed()
@@ -240,7 +264,7 @@ class PackageControl(kp.Plugin):
                         self.info("Package not found in repository:", untracked)
                 self._save_settings()
                 self.info("Reinstalling all untracked packages finished")
-        except Exception as exc:
+        except Exception:
             self.err("Error occurred while executing command '{}'\n{}".format(item, traceback.format_exc()))
         finally:
             self.__command_executing = False
@@ -253,8 +277,11 @@ class PackageControl(kp.Plugin):
 
         self._debug = settings.get_bool("debug", "main", False)
 
+        old_repo_url = self._repo_url
         self._repo_url = settings.get("repository", "main", self.DEFAULT_REPO)
         self.dbg("repo_url:", self._repo_url)
+        if old_repo_url != self._repo_url:
+            self._get_available_packages(True)
 
         self._installed_packages = list(set(settings.get_multiline("installed_packages", "main")))
         self.dbg("installed_packages:", self._installed_packages)
@@ -386,7 +413,9 @@ class PackageControl(kp.Plugin):
                                                             json_package["description"],
                                                             self._make_date(json_package["date"]),
                                                             json_package["download_url"],
-                                                            json_package["filename"]))
+                                                            json_package["filename"],
+                                                            json_package["owner"] if "owner" in json_package else "",
+                                                            json_package["homepage"] if "homepage" in json_package else ""))
                 self.dbg(self._available_packages)
 
                 if write_cache:

@@ -5,13 +5,15 @@ import os
 class Package:
     """Represents a keypirinha package
     """
-    def __init__(self, name, version, desc, date, dl_url, filename):
+    def __init__(self, name, version, desc, date, dl_url, filename, owner, homepage):
         self.name = name
         self.version = version
         self.description = desc
         self.date = date
         self.download_url = dl_url
         self.filename = filename if filename else "{}.keypirinha-package".format(name)
+        self.owner = owner
+        self.homepage = homepage
 
     def download(self, opener, directory):
         """Downloads the file from download_url and saves it to the given directory
@@ -33,7 +35,9 @@ class Package:
             "filename": self.filename,
             "date": self.date.strftime("%Y-%m-%dT%H:%M:%S%z"),
             "description": self.description,
-            "version": self.version
+            "version": self.version,
+            "owner": self.owner,
+            "homepage": self.homepage
         }
         return obj
 
