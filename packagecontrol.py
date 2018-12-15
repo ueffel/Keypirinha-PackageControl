@@ -229,7 +229,11 @@ class PackageControl(kp.Plugin):
             if action is not None and action.name() == "visit_homepage":
                 package = self._get_package(item.data_bag())
                 if package.homepage:
-                    kpu.shell_execute(package.homepage)
+                    self.dbg(urllib.parse.urlparse(package.homepage).scheme)
+                    if urllib.parse.urlparse(package.homepage).scheme in ("http", "https"):
+                        kpu.shell_execute(package.homepage)
+                    else:
+                        self.warn("Package homepage is not a web link: ", package.homepage)
                 else:
                     self.warn("Package homepage not set")
                 return
