@@ -17,6 +17,8 @@ All commands are prefixed with `PackageControl:`.
 * Reinstall All Untracked - Does the  Reinstall Untracked command for all untracked packages
 * Update Repository List - Downloads the list of available package again
 
+![Usage](usage.gif)
+
 ## Installation
 
 ### Directly from Keypirinha

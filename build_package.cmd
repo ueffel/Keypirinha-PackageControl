@@ -49,6 +49,7 @@ echo Using "%SEVENZIP%" to pack
     -tzip "%PACKAGE_NAME%.keypirinha-package" ^
     -x!%~nx0 ^
     -xr!.git ^
+    -xr!usage.gif ^
     -xr@.gitignore ^
     -x!.gitignore ^
     *
