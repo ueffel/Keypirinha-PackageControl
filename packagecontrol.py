@@ -19,6 +19,7 @@ class PackageControl(kp.Plugin):
     """Package that provides a means to install, update and remove keypirinha packages
     """
     DEFAULT_REPO = "https://ue.spdns.de/packagecontrol/packages.json"
+    DEFAULT_ALT_REPO = "https://ueffel.pythonanywhere.com/packages.json"
     DEFAULT_AUTOUPDATE = True
     DEFAULT_UPDATE_INTERVAL = 12
     COMMAND_INSTALL = "install"
@@ -36,6 +37,7 @@ class PackageControl(kp.Plugin):
         self._untracked_packages = []
         self._available_packages = []
         self._repo_url = self.DEFAULT_REPO
+        self._alt_repo_url = self.DEFAULT_ALT_REPO
         self._autoupdate = self.DEFAULT_AUTOUPDATE
         self._update_interval = self.DEFAULT_UPDATE_INTERVAL
         self._urlopener = kpn.build_urllib_opener(extra_handlers=[RedirectorHandler()])
@@ -54,7 +56,7 @@ class PackageControl(kp.Plugin):
 
         if flags & kp.Events.NETOPTIONS:
             self.dbg("Network settings changed: rebuilding urlopener")
-            self._urlopener = kpn.build_urllib_opener()
+            self._urlopener = kpn.build_urllib_opener(extra_handlers=[RedirectorHandler()])
 
     def on_start(self):
         """Reads config, checks packages and installs missing packages
@@ -284,6 +286,10 @@ class PackageControl(kp.Plugin):
         old_repo_url = self._repo_url
         self._repo_url = settings.get("repository", "main", self.DEFAULT_REPO)
         self.dbg("repo_url:", self._repo_url)
+
+        self._alt_repo_url = settings.get("alternative_repository", "main", self.DEFAULT_ALT_REPO)
+        self.dbg("alt_repo_url:", self._alt_repo_url)
+
         if old_repo_url != self._repo_url:
             self._get_available_packages(True)
 
@@ -310,6 +316,10 @@ class PackageControl(kp.Plugin):
 
         if "repository" in config["main"] and config["main"]["repository"] != self._repo_url:
             config["main"]["repository"] = self._repo_url
+
+        if "alternative_repository" in config["main"] and config["main"]["alternative_repository"] != self._alt_repo_url:
+            config["main"]["alternative_repository"] = self._alt_repo_url
+
         config["main"]["installed_packages"] = "\n{}".format("\n".join(self._installed_packages))
 
         with open(save_path, "w") as ini_file:
@@ -399,14 +409,32 @@ class PackageControl(kp.Plugin):
                                                                                               len(repo["packages"])))
 
                 if force or not repo:
-                    self.dbg("No available packages cached or its time to update, getting list from", self._repo_url)
-                    req = urllib.request.Request(self._repo_url)
-                    with self._urlopener.open(req) as response:
-                        repo = json.loads(response.read().decode())
-                        if hasattr(req, "redirect"):
-                            self.info("Request permanently redirected. Changing repository url to:", req.redirect)
-                            self._repo_url = req.redirect
-                            self._save_settings()
+                    self.dbg("No available packages cached or its time to update, getting list from the net")
+                    tries = 4
+                    repos = [self._repo_url, self._alt_repo_url]
+                    while tries > 0:
+                        try:
+                            repo = repos[tries % 2]
+                            self.dbg("Try to get list from", repo)
+                            req = urllib.request.Request(repo)
+                            with self._urlopener.open(req) as response:
+                                repo = json.loads(response.read().decode())
+                                tries = 0
+                                if hasattr(req, "redirect"):
+                                    self.info("Request permanently redirected. Changing repository url to:", req.redirect)
+                                    if tries % 2 == 0:
+                                        self._repo_url = req.redirect
+                                    else:
+                                        self._alt_repo_url = req.redirect
+                                    self._save_settings()
+                        except Exception as ex:
+                            tries -= 1
+                            if tries > 0:
+                                self.dbg("Error while obtaining the packages trying again...:", traceback.format_exc())
+                                self.err("Error while obtaining the packages trying again...")
+                            else:
+                                raise ex
+
                     write_cache = True
                     self.info("Package list loaded from '{}' ({} packages)".format(repo["name"], len(repo["packages"])))
 
