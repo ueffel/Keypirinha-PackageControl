@@ -14,30 +14,23 @@ if not errorlevel 1 (
     goto done_sevenzip
 )
 
-if exist "c:\Program Files (x86)\7-Zip\7z.exe" (
-    set "SEVENZIP=c:\Program Files (x86)\7-Zip\7z.exe"
-    goto done_sevenzip
-)
-
-if exist "c:\Program Files (x86)\7-Zip\7za.exe" (
-    set "SEVENZIP=c:\Program Files (x86)\7-Zip\7za.exe"
-    goto done_sevenzip
-)
-
-if exist "c:\Program Files\7-Zip\7z.exe" (
-    set "SEVENZIP=c:\Program Files\7-Zip\7z.exe"
-    goto done_sevenzip
-)
-
-if exist "c:\Program Files\7-Zip\7za.exe" (
-    set "SEVENZIP=c:\Program Files\7-Zip\7za.exe"
-    goto done_sevenzip
+for /f "tokens=3,*" %%v in ('reg query HKCU\Software\7-Zip /v Path') do (
+    echo %%v %%w
+    if exist "%%v %%w7z.exe" (
+        set "SEVENZIP=%%v %%w7z.exe"
+        goto done_sevenzip
+    )
+    if exist "%%v %%w7za.exe" (
+        set "SEVENZIP=%%v %%w7za.exe"
+        goto done_sevenzip
+    )
 )
 
 if not defined SEVENZIP (
     echo 7zip not found
     exit /b 1
 )
+
 :done_sevenzip
 
 :pack
