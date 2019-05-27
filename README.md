@@ -23,7 +23,7 @@ All commands are prefixed with `PackageControl:`.
 
 ### Directly from Keypirinha
 
-* Open the `Keypirinha: Console`
+* Open the `Keypirinha: Console` (Shortcut: F2)
 * Enter the following:
     ```python
     import keypirinha as kp,keypirinha_net as kpn,os;p="PackageControl.keypirinha-package";d=kpn.build_urllib_opener().open("https://github.com/ueffel/Keypirinha-PackageControl/releases/download/1.0.0/"+p);pb=d.read();d.close();f=open(os.path.join(kp.installed_package_dir(),p),"wb");f.write(pb);f.close()
@@ -44,7 +44,7 @@ Reloading](http://keypirinha.com/api/overview.html?highlight=tricky#reloading) o
 related: [this issue](https://github.com/Keypirinha/Keypirinha/issues/117).
 
 TL;DR: Python's import/unload machinery can sometimes do weird stuff at runtime. Restarting the
-python interpreter helps.
+python interpreter (which means restarting Keypirinha) helps.
 
 ## Default Repository
 
