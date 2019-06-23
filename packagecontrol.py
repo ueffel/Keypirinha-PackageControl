@@ -11,6 +11,8 @@ import re
 import time
 import traceback
 import urllib
+import gzip
+
 
 PACKAGE_COMMAND = kp.ItemCategory.USER_BASE + 1
 
@@ -416,12 +418,16 @@ class PackageControl(kp.Plugin):
                         try:
                             repo = repos[tries % 2]
                             self.dbg("Try to get list from", repo)
-                            req = urllib.request.Request(repo)
+                            req = urllib.request.Request(repo, headers={"Accept-Encoding": "gzip"})
                             with self._urlopener.open(req) as response:
-                                repo = json.loads(response.read().decode())
+                                if response.info().get("Content-Encoding") == "gzip":
+                                    repo = json.loads(gzip.decompress(response.read()).decode())
+                                else:
+                                    repo = json.loads(response.read().decode())
                                 tries = 0
                                 if hasattr(req, "redirect"):
-                                    self.info("Request permanently redirected. Changing repository url to:", req.redirect)
+                                    self.info("Request permanently redirected. Changing repository url to:",
+                                              req.redirect)
                                     if tries % 2 == 0:
                                         self._repo_url = req.redirect
                                     else:
@@ -447,7 +453,8 @@ class PackageControl(kp.Plugin):
                                                             json_package["download_url"],
                                                             json_package["filename"],
                                                             json_package["owner"] if "owner" in json_package else "",
-                                                            json_package["homepage"] if "homepage" in json_package else ""))
+                                                            json_package["homepage"]
+                                                            if "homepage" in json_package else ""))
                 self.dbg(self._available_packages)
 
                 if write_cache:
@@ -462,7 +469,7 @@ class PackageControl(kp.Plugin):
                     self._save_last_run()
 
             return self._available_packages
-        except Exception as exc:
+        except Exception:
             self.err("Available packages could not be obtained:\n", traceback.format_exc())
         finally:
             self.__list_updating = False
