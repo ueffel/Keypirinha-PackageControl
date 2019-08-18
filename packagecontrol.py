@@ -1,5 +1,6 @@
 from .lib.package import Package
 from .lib.RedirectorHandler import RedirectorHandler
+from .lib.UserAgentHandler import UserAgentHandler
 import keypirinha as kp
 import keypirinha_net as kpn
 import keypirinha_util as kpu
@@ -12,9 +13,7 @@ import time
 import traceback
 import urllib
 import gzip
-
-
-PACKAGE_COMMAND = kp.ItemCategory.USER_BASE + 1
+import sys
 
 
 class PackageControl(kp.Plugin):
@@ -24,6 +23,7 @@ class PackageControl(kp.Plugin):
     DEFAULT_ALT_REPO = "https://ueffel.pythonanywhere.com/packages.json"
     DEFAULT_AUTOUPDATE = True
     DEFAULT_UPDATE_INTERVAL = 12
+    PACKAGE_COMMAND = kp.ItemCategory.USER_BASE + 1
     COMMAND_INSTALL = "install"
     COMMAND_REMOVE = "remove"
     COMMAND_UPDATE = "update"
@@ -42,7 +42,7 @@ class PackageControl(kp.Plugin):
         self._alt_repo_url = self.DEFAULT_ALT_REPO
         self._autoupdate = self.DEFAULT_AUTOUPDATE
         self._update_interval = self.DEFAULT_UPDATE_INTERVAL
-        self._urlopener = kpn.build_urllib_opener(extra_handlers=[RedirectorHandler()])
+        self._urlopener = self._build_urlopener()
         self.__command_executing = False
         self.__list_updating = False
         self._actions = []
@@ -58,7 +58,7 @@ class PackageControl(kp.Plugin):
 
         if flags & kp.Events.NETOPTIONS:
             self.dbg("Network settings changed: rebuilding urlopener")
-            self._urlopener = kpn.build_urllib_opener(extra_handlers=[RedirectorHandler()])
+            self._urlopener = self._build_urlopener()
 
     def on_start(self):
         """Reads config, checks packages and installs missing packages
@@ -77,7 +77,7 @@ class PackageControl(kp.Plugin):
             short_desc="Opens the browser"
         ))
 
-        self.set_actions(PACKAGE_COMMAND, self._actions)
+        self.set_actions(self.PACKAGE_COMMAND, self._actions)
 
         # Adding PackageControl itself, so updating is possible
         if os.path.dirname(__file__).endswith("PackageControl.keypirinha-package") \
@@ -92,7 +92,7 @@ class PackageControl(kp.Plugin):
         catalog = []
 
         install_cmd = self.create_item(
-            category=PACKAGE_COMMAND,
+            category=self.PACKAGE_COMMAND,
             label="PackageControl: Install Package",
             short_desc="Installs a new packages from the repositiory",
             target=self.COMMAND_INSTALL,
@@ -102,7 +102,7 @@ class PackageControl(kp.Plugin):
         catalog.append(install_cmd)
 
         uninstall_cmd = self.create_item(
-            category=PACKAGE_COMMAND,
+            category=self.PACKAGE_COMMAND,
             label="PackageControl: Remove Package",
             short_desc="Removes already installed packages",
             target=self.COMMAND_REMOVE,
@@ -112,7 +112,7 @@ class PackageControl(kp.Plugin):
         catalog.append(uninstall_cmd)
 
         update_cmd = self.create_item(
-            category=PACKAGE_COMMAND,
+            category=self.PACKAGE_COMMAND,
             label="PackageControl: Update Package",
             short_desc="Updates already installed packages to the latest version",
             target=self.COMMAND_UPDATE,
@@ -122,7 +122,7 @@ class PackageControl(kp.Plugin):
         catalog.append(update_cmd)
 
         reinstall_cmd = self.create_item(
-            category=PACKAGE_COMMAND,
+            category=self.PACKAGE_COMMAND,
             label="PackageControl: Reinstall Package",
             short_desc="Removes packages and installs them again from the repository",
             target=self.COMMAND_REINSTALL,
@@ -132,7 +132,7 @@ class PackageControl(kp.Plugin):
         catalog.append(reinstall_cmd)
 
         reinstall_untracked_cmd = self.create_item(
-            category=PACKAGE_COMMAND,
+            category=self.PACKAGE_COMMAND,
             label="PackageControl: Reinstall untracked package from repository",
             short_desc="Reinstalls a package that was not installed through PackageControl from the repository",
             target=self.COMMAND_REINSTALL_UNTRACKED,
@@ -142,7 +142,7 @@ class PackageControl(kp.Plugin):
         catalog.append(reinstall_untracked_cmd)
 
         update_repo_cmd = self.create_item(
-            category=PACKAGE_COMMAND,
+            category=self.PACKAGE_COMMAND,
             label="PackageControl: Update Repository List",
             short_desc="Updates the list of packages from the repository",
             target=self.COMMAND_UPDATE_REPO,
@@ -152,7 +152,7 @@ class PackageControl(kp.Plugin):
         catalog.append(update_repo_cmd)
 
         update_all_cmd = self.create_item(
-            category=PACKAGE_COMMAND,
+            category=self.PACKAGE_COMMAND,
             label="PackageControl: Update All Packages",
             short_desc="Updates all currently installed packages to the latest version from the repository",
             target=self.COMMAND_UPDATE_ALL,
@@ -162,7 +162,7 @@ class PackageControl(kp.Plugin):
         catalog.append(update_all_cmd)
 
         reinstall_all_untracked_cmd = self.create_item(
-            category=PACKAGE_COMMAND,
+            category=self.PACKAGE_COMMAND,
             label="PackageControl: Reinstalls all untracked package from repository",
             short_desc="Reinstalls all packages that were not installed through PackageControl from the repository",
             target=self.COMMAND_REINSTALL_ALL_UNTRACKED,
@@ -237,7 +237,7 @@ class PackageControl(kp.Plugin):
                     if urllib.parse.urlparse(package.homepage).scheme in ("http", "https"):
                         kpu.shell_execute(package.homepage)
                     else:
-                        self.warn("Package homepage is not a web link: ", package.homepage)
+                        self.warn("Package homepage is not a web link:", package.homepage)
                 else:
                     self.warn("Package homepage not set")
                 return
@@ -304,6 +304,18 @@ class PackageControl(kp.Plugin):
         self._update_interval = settings.get_float("update_interval", "main", self.DEFAULT_UPDATE_INTERVAL)
         self.dbg("update_interval:", self._update_interval)
 
+    def _build_urlopener(self):
+        """Creates an urllib opener with 2 custom handlers and returns it
+        """
+        self.dbg("Building urlopener")
+        user_agent = "{}/{} python-{}/{}.{}.{}".format(kp.name(),
+                                                       kp.version_string(),
+                                                       urllib.__name__,
+                                                       sys.version_info[0],
+                                                       sys.version_info[1],
+                                                       sys.version_info[2])
+        return kpn.build_urllib_opener(extra_handlers=[RedirectorHandler(), UserAgentHandler(user_agent)])
+
     def _save_settings(self):
         """Save the user config file with all installed packages
         """
@@ -342,7 +354,7 @@ class PackageControl(kp.Plugin):
         for installed_package in self._installed_packages:
             package = self._get_package(installed_package)
             if package and package.filename not in installed_fs:
-                self.dbg("Package '{}' not installed", installed_package)
+                self.dbg("Package not installed:", installed_package)
                 self._install_package(package, save_settings=False)
             else:
                 self.dbg("Package installed:", installed_package)
