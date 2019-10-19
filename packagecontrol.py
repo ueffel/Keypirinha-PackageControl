@@ -428,9 +428,9 @@ class PackageControl(kp.Plugin):
                     repos = [self._repo_url, self._alt_repo_url]
                     while tries > 0:
                         try:
-                            repo = repos[tries % 2]
-                            self.dbg("Try to get list from", repo)
-                            req = urllib.request.Request(repo, headers={"Accept-Encoding": "gzip"})
+                            repo_url = repos[tries % 2]
+                            self.dbg("Try to get list from", repo_url)
+                            req = urllib.request.Request(repo_url, headers={"Accept-Encoding": "gzip"})
                             with self._urlopener.open(req) as response:
                                 if response.info().get("Content-Encoding") == "gzip":
                                     repo = json.loads(gzip.decompress(response.read()).decode())
