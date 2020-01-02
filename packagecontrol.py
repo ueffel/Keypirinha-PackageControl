@@ -1,6 +1,5 @@
 from .lib.package import Package
 from .lib.RedirectorHandler import RedirectorHandler
-from .lib.UserAgentHandler import UserAgentHandler
 import keypirinha as kp
 import keypirinha_net as kpn
 import keypirinha_util as kpu
@@ -314,7 +313,9 @@ class PackageControl(kp.Plugin):
                                                        sys.version_info[0],
                                                        sys.version_info[1],
                                                        sys.version_info[2])
-        return kpn.build_urllib_opener(extra_handlers=[RedirectorHandler(), UserAgentHandler(user_agent)])
+        opener = kpn.build_urllib_opener(extra_handlers=[RedirectorHandler()])
+        opener.addheaders = [("Accept-Encoding", "gzip"), ("User-Agent", user_agent)]
+        return opener
 
     def _save_settings(self):
         """Save the user config file with all installed packages
@@ -430,7 +431,7 @@ class PackageControl(kp.Plugin):
                         try:
                             repo_url = repos[tries % 2]
                             self.dbg("Try to get list from", repo_url)
-                            req = urllib.request.Request(repo_url, headers={"Accept-Encoding": "gzip"})
+                            req = urllib.request.Request(repo_url)
                             with self._urlopener.open(req) as response:
                                 if response.info().get("Content-Encoding") == "gzip":
                                     repo = json.loads(gzip.decompress(response.read()).decode())
