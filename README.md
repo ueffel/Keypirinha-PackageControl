@@ -1,8 +1,7 @@
 # Keypirinha Package Control
 
-This is a package for the fast keystroke launcher keypirinha
-[(http://keypirinha.com/)](http://keypirinha.com/). It provides commands to install, update and
-remove third party packages.
+This is a package for the fast keystroke launcher keypirinha (<http://keypirinha.com/>). It provides
+commands to install, update and remove third party packages.
 
 ## Usage
 
