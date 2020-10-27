@@ -510,10 +510,15 @@ class PackageControl(kp.Plugin):
         with open(os.path.join(cache_path, "last.run"), "r") as last_run:
             date_str = last_run.read()
 
-        date = self._make_date(date_str)
-        return date \
-            if date.replace(tzinfo=None)+datetime.timedelta(hours=self._update_interval) > datetime.datetime.utcnow() \
-            else None
+        try:
+            date = self._make_date(date_str)
+            return date \
+                if date.replace(tzinfo=None)+datetime.timedelta(hours=self._update_interval) > datetime.datetime.utcnow() \
+                else None
+        except Exception:
+            self.warn(traceback.format_exc())
+            return None
+
 
     def _save_last_run(self):
         """Writes the time of the last run to a file
