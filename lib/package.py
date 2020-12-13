@@ -18,13 +18,18 @@ class Package:
     def download(self, opener, directory):
         """Downloads the file from download_url and saves it to the given directory
         """
-        with opener.open(self.download_url) as dl, \
-                open(os.path.join(directory, self.filename), "wb") as package:
-            for chunk in iter(lambda: dl.read(4096), ""):
-                if not chunk:
-                    break
-                package.write(chunk)
-        os.utime(os.path.join(directory, self.filename), times=(self.date.timestamp(), self.date.timestamp()))
+        try:
+            with opener.open(self.download_url) as dl, \
+                    open(os.path.join(directory, self.filename), "wb") as package:
+                for chunk in iter(lambda: dl.read(4096), ""):
+                    if not chunk:
+                        break
+                    package.write(chunk)
+            os.utime(os.path.join(directory, self.filename), times=(self.date.timestamp(), self.date.timestamp()))
+        except:
+            if os.path.exists(os.path.join(directory, self.filename)):
+                os.unlink(os.path.join(directory, self.filename))
+            raise
 
     def to_dict(self):
         """Creates a dictionary from the package object
