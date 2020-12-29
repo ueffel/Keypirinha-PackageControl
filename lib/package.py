@@ -19,16 +19,17 @@ class Package:
         """Downloads the file from download_url and saves it to the given directory
         """
         try:
+            file_path = os.path.join(directory, self.filename)
             with opener.open(self.download_url) as dl, \
-                    open(os.path.join(directory, self.filename), "wb") as package:
+                    open(file_path, "wb") as package:
                 for chunk in iter(lambda: dl.read(4096), ""):
                     if not chunk:
                         break
                     package.write(chunk)
-            os.utime(os.path.join(directory, self.filename), times=(self.date.timestamp(), self.date.timestamp()))
+            os.utime(file_path, times=(self.date.timestamp(), self.date.timestamp()))
         except:
-            if os.path.exists(os.path.join(directory, self.filename)):
-                os.unlink(os.path.join(directory, self.filename))
+            if os.path.exists(file_path):
+                os.unlink(file_path)
             raise
 
     def to_dict(self):
