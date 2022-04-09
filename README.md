@@ -48,6 +48,24 @@ related: [this issue](https://github.com/Keypirinha/Keypirinha/issues/117).
 TL;DR: Python's import/unload machinery can sometimes do weird stuff at runtime. Restarting the
 python interpreter (which means restarting Keypirinha) helps.
 
+## Troubleshooting
+
+As multiple users reported problems that PackageControl just shows "Collecting packages"
+([#8](https://github.com/ueffel/Keypirinha-PackageControl/issues/8),
+[#11](https://github.com/ueffel/Keypirinha-PackageControl/issues/11),
+[#16](https://github.com/ueffel/Keypirinha-PackageControl/issues/16)), here are 2 quick solutions to
+solve this:
+
+* Install the current version of PackageControl by running the code snippet above (as this
+  particular problem is fixed in
+  [#11](https://github.com/ueffel/Keypirinha-PackageControl/issues/11)) or
+* Locate the corrupt `last.run` file that causes the problem and delete it. In installed mode it
+  would be located in
+  `c:\Users\<username>\AppData\Local\Keypirinha\Packages\PackageControl\last.run` and in portable
+  mode in `<Keypirinha_Home>\portable\Local\Packages\PackageControl\last.run`.  
+  After that you should use the `Reinstall Package` item in keypirinha to reinstall PackageControl
+  to make absolutly sure you have the latest version.
+
 ## Default Repository
 
 ### Overview
