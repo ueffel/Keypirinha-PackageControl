@@ -449,8 +449,8 @@ class PackageControl(kp.Plugin):
                         except Exception as ex:
                             tries -= 1
                             if tries > 0:
-                                self.dbg("Error while obtaining the packages trying again...:", traceback.format_exc())
-                                self.err("Error while obtaining the packages trying again...")
+                                self.err("Error while obtaining the package list @", repo_url, ex, "\ntrying again...")
+                                self.dbg(traceback.format_exc())
                             else:
                                 raise ex
 
