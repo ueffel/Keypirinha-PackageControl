@@ -93,7 +93,7 @@ class PackageControl(kp.Plugin):
         install_cmd = self.create_item(
             category=self.PACKAGE_COMMAND,
             label="PackageControl: Install Package",
-            short_desc="Installs a new packages from the repositiory",
+            short_desc="Installs a new packages from the repository",
             target=self.COMMAND_INSTALL,
             args_hint=kp.ItemArgsHint.REQUIRED,
             hit_hint=kp.ItemHitHint.NOARGS
@@ -518,7 +518,6 @@ class PackageControl(kp.Plugin):
         except Exception:
             self.warn(traceback.format_exc())
             return None
-
 
     def _save_last_run(self):
         """Writes the time of the last run to a file
