@@ -459,6 +459,9 @@ class PackageControl(kp.Plugin):
 
                 self._available_packages = []
                 for json_package in repo["packages"]:
+                    if not json_package["name"]:
+                        self.warn("empty package encountered in repo, skipping", json_package)
+                        continue
                     self._available_packages.append(Package(json_package["name"],
                                                             json_package["version"],
                                                             json_package["description"],
