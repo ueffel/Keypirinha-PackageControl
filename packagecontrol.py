@@ -490,17 +490,20 @@ class PackageControl(kp.Plugin):
         finally:
             self.__list_updating = False
 
-    def _make_date(self, date_str):
+    def _make_date(self, date):
         """Parses a isoformat datetime string to an datetime-object
 
         Don't look at this, just don't
         """
-        if re.search(r"[+\-]\d\d:\d\d$", date_str):
-            date_str = date_str[:-3] + date_str[-2:]
-        elif date_str[-5] != '-' and date_str[-5] != '+':
-            date_str += "+0000"
+        if isinstance(date, datetime.datetime):
+            return date
 
-        return datetime.datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S%z")
+        if re.search(r"[+\-]\d\d:\d\d$", date):
+            date = date[:-3] + date[-2:]
+        elif date[-5] != '-' and date[-5] != '+':
+            date += "+0000"
+
+        return datetime.datetime.strptime(date, "%Y-%m-%dT%H:%M:%S%z")
 
     def _get_last_run(self):
         """Reads the time of the last run from file
