@@ -304,7 +304,7 @@ class PackageControl(kp.Plugin):
         self.dbg("update_interval:", self._update_interval)
 
     def _build_urlopener(self):
-        """Creates an urllib opener with 2 custom handlers and returns it
+        """Creates an urllib opener with a custom handler with some request headers and returns it
         """
         self.dbg("Building urlopener")
         user_agent = "{}/{} python-{}/{}.{}.{}".format(kp.name(),

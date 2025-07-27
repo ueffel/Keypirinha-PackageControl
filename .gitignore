@@ -2,3 +2,4 @@
 .vscode
 *.bak
 *.keypirinha-package
+.nvim.lua
